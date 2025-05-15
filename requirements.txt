@@ -1,7 +1,6 @@
-streamlit
 fastapi
 uvicorn
-joblib
 pandas
-requests
+joblib
 scikit-learn
+streamlit
