@@ -1,23 +1,38 @@
+import os
 import joblib
 import pandas as pd
+import gdown
 
-# Load model files once at app startup
+# Google Drive file IDs (from the shareable links)
+file_ids = {
+    "item_similarity.pkl": "1FoZh8k4kZnI7eHKDwsuVETIpEEySPaMC",
+    "item_to_category.pkl": "1AYeUpp-s8ySPg8BzG5zE7RJHTR8qRbiN",
+    "category_to_items.pkl": "1etDGLM0x-7kWyTV1vb8UTNVL1L68EZAK",
+    "df_filtered.pkl": "1U8aJY5UbtYy61CGz0IorF77OhxvOnIvV"
+}
+
+# Download and load all models
 def load_model():
-    print("📦 Loading model files from 'models/'...")
+    os.makedirs("models", exist_ok=True)
+    models = {}
 
-    item_similarity = joblib.load("models/item_similarity.pkl")
-    item_to_category = joblib.load("models/item_to_category.pkl")
-    category_to_items = joblib.load("models/category_to_items.pkl")
-    df_filtered = joblib.load("models/df_filtered.pkl")
+    for filename, file_id in file_ids.items():
+        output_path = f"models/{filename}"
+        if not os.path.exists(output_path):
+            print(f"⬇️ Downloading {filename} from Drive...")
+            url = f"https://drive.google.com/uc?id={file_id}"
+            gdown.download(url, output_path, quiet=False)
 
-    print("✅ Files loaded successfully.")
+        print(f"📦 Loading {filename}...")
+        models[filename] = joblib.load(output_path)
 
     return {
-        "item_similarity": item_similarity,
-        "item_to_category": item_to_category,
-        "category_to_items": category_to_items,
-        "df_filtered": df_filtered
+        "item_similarity": models["item_similarity.pkl"],
+        "item_to_category": models["item_to_category.pkl"],
+        "category_to_items": models["category_to_items.pkl"],
+        "df_filtered": models["df_filtered.pkl"]
     }
+
 
 # Prediction logic
 def predict_fn(input_data, model):
