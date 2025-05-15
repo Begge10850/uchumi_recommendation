@@ -33,3 +33,8 @@ def get_recommendations(request: ItemRequest):
     )
 
     return response
+
+# 5. Health check endpoint
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
