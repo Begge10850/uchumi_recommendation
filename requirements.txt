@@ -5,3 +5,4 @@ joblib
 scikit-learn
 streamlit
 gdown
+boto3>=1.24.0

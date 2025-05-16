@@ -1,33 +1,54 @@
+import os
+import boto3
 import joblib
 import pandas as pd
-import os
-import gdown
 
-# File IDs extracted from your shared links
-FILE_IDS = {
-    "item_similarity": "1OIaMWUWdERg--Q_P8DyoVR2LgY_o19ck",
-    "item_to_category": "1KqxM3iYxJ80qOarnIyexjzyEqfFcibV_",
-    "category_to_items": "1N_5kOiivNwKH4ncv08oAej8BdRuYGHCZ",
-    "df_filtered": "1y5giweAx8N85aTA2vudQronPsYKjKHYU"
+# Define bucket and model file names
+BUCKET_NAME = "retail-recommender-treva"
+MODEL_FILES = {
+    "item_similarity": "item_similarity.pkl",
+    "item_to_category": "item_to_category.pkl",
+    "category_to_items": "category_to_items.pkl",
+    "df_filtered": "df_filtered.pkl"
 }
 
-# Download and load models
+# Local path to temporarily store models
+MODEL_DIR = "models"
+os.makedirs(MODEL_DIR, exist_ok=True)
+
+def download_from_s3():
+    print("🔁 Downloading model files from S3...")
+
+    s3 = boto3.client(
+        "s3",
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+        region_name=os.getenv("AWS_REGION", "eu-north-1")
+    )
+
+    for key, filename in MODEL_FILES.items():
+        local_path = os.path.join(MODEL_DIR, filename)
+        print(f"⬇️ Downloading {filename}...")
+        s3.download_file(BUCKET_NAME, filename, local_path)
+
+    print("✅ All models downloaded.")
+
 def load_model():
-    os.makedirs("models", exist_ok=True)
-    models = {}
+    download_from_s3()
 
-    for name, file_id in FILE_IDS.items():
-        output_path = f"models/{name}.pkl"
-        if not os.path.exists(output_path):
-            url = f"https://drive.google.com/uc?id={file_id}"
-            print(f"📦 Downloading {name}.pkl...")
-            gdown.download(url, output_path, quiet=False)
-        models[name] = joblib.load(output_path)
+    print("📦 Loading model files into memory...")
+    item_similarity = joblib.load(os.path.join(MODEL_DIR, MODEL_FILES["item_similarity"]))
+    item_to_category = joblib.load(os.path.join(MODEL_DIR, MODEL_FILES["item_to_category"]))
+    category_to_items = joblib.load(os.path.join(MODEL_DIR, MODEL_FILES["category_to_items"]))
+    df_filtered = joblib.load(os.path.join(MODEL_DIR, MODEL_FILES["df_filtered"]))
 
-    print("✅ All model files loaded.")
-    return models
+    return {
+        "item_similarity": item_similarity,
+        "item_to_category": item_to_category,
+        "category_to_items": category_to_items,
+        "df_filtered": df_filtered
+    }
 
-# Prediction logic
 def predict_fn(input_data, model):
     item_id = input_data.get("item_id")
     top_n = input_data.get("top_n", 5)
@@ -42,21 +63,22 @@ def predict_fn(input_data, model):
     bought_together = []
     fallback_items = []
 
-    # Similar items by cosine similarity
+    # Cosine similarity recommendations
     if item_id in item_similarity_df.index:
         similar_items = item_similarity_df.loc[item_id]
-        filtered = similar_items[(similar_items >= threshold) & (similar_items.index != item_id)]
+        filtered_similar = similar_items[(similar_items >= threshold) & (similar_items.index != item_id)]
         if item_cat:
-            filtered = filtered[filtered.index.map(item_to_category.get) == item_cat]
-        bought_together = filtered.sort_values(ascending=False).head(top_n).index.tolist()
+            filtered_similar = filtered_similar[filtered_similar.index.map(item_to_category.get) == item_cat]
+        bought_together = filtered_similar.sort_values(ascending=False).head(top_n).index.tolist()
 
-    # Top purchased items in same category
+    # Same category fallback
     if item_cat:
         cat_items = category_to_items.get(item_cat, [])
-        valid_items = [item for item in cat_items if item != item_id and item in item_similarity_df.index]
-        if valid_items:
-            purchase_counts = df_filtered[df_filtered["event"] == "transaction"]["itemid"].value_counts()
-            fallback_items = sorted(valid_items, key=lambda x: purchase_counts.get(x, 0), reverse=True)[:4]
+        valid_cat_items = [item for item in cat_items if item != item_id and item in item_similarity_df.index]
+        if valid_cat_items:
+            purchase_counts = df_filtered[df_filtered['event'] == 'transaction']['itemid'].value_counts()
+            sorted_cat_items = sorted(valid_cat_items, key=lambda x: purchase_counts.get(x, 0), reverse=True)
+            fallback_items = sorted_cat_items[:4]
 
     return {
         "selected_item": item_id,
