@@ -6,10 +6,10 @@ import pandas as pd
 # Define bucket and model file names
 BUCKET_NAME = "retail-recommender-treva"
 MODEL_FILES = {
-    "item_similarity": "models/item_similarity.pkl",
-    "item_to_category": "models/item_to_category.pkl",
-    "category_to_items": "models/category_to_items.pkl",
-    "df_filtered": "models/df_filtered.pkl"
+    "item_similarity": "item_similarity.pkl",
+    "item_to_category": "item_to_category.pkl",
+    "category_to_items": "category_to_items.pkl",
+    "df_filtered": "df_filtered.pkl"
 }
 
 # Local path to temporarily store models
