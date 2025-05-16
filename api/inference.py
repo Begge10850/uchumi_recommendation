@@ -1,43 +1,35 @@
-import os
 import joblib
 import pandas as pd
+import os
 import gdown
 
-# Google Drive file IDs (from the shareable links)
-file_ids = {
-    "item_similarity.pkl": "1FoZh8k4kZnI7eHKDwsuVETIpEEySPaMC",
-    "item_to_category.pkl": "1AYeUpp-s8ySPg8BzG5zE7RJHTR8qRbiN",
-    "category_to_items.pkl": "1etDGLM0x-7kWyTV1vb8UTNVL1L68EZAK",
-    "df_filtered.pkl": "1U8aJY5UbtYy61CGz0IorF77OhxvOnIvV"
+# File IDs extracted from your shared links
+FILE_IDS = {
+    "item_similarity": "1OIaMWUWdERg--Q_P8DyoVR2LgY_o19ck",
+    "item_to_category": "1KqxM3iYxJ80qOarnIyexjzyEqfFcibV_",
+    "category_to_items": "1N_5kOiivNwKH4ncv08oAej8BdRuYGHCZ",
+    "df_filtered": "1y5giweAx8N85aTA2vudQronPsYKjKHYU"
 }
 
-# Download and load all models
+# Download and load models
 def load_model():
     os.makedirs("models", exist_ok=True)
     models = {}
 
-    for filename, file_id in file_ids.items():
-        output_path = f"models/{filename}"
+    for name, file_id in FILE_IDS.items():
+        output_path = f"models/{name}.pkl"
         if not os.path.exists(output_path):
-            print(f"⬇️ Downloading {filename} from Drive...")
             url = f"https://drive.google.com/uc?id={file_id}"
+            print(f"📦 Downloading {name}.pkl...")
             gdown.download(url, output_path, quiet=False)
+        models[name] = joblib.load(output_path)
 
-        print(f"📦 Loading {filename}...")
-        models[filename] = joblib.load(output_path)
-
-    return {
-        "item_similarity": models["item_similarity.pkl"],
-        "item_to_category": models["item_to_category.pkl"],
-        "category_to_items": models["category_to_items.pkl"],
-        "df_filtered": models["df_filtered.pkl"]
-    }
-
+    print("✅ All model files loaded.")
+    return models
 
 # Prediction logic
 def predict_fn(input_data, model):
-    # Convert to float since your index is float64
-    item_id = float(input_data.get("item_id"))
+    item_id = input_data.get("item_id")
     top_n = input_data.get("top_n", 5)
     threshold = input_data.get("threshold", 0.75)
 
@@ -50,25 +42,21 @@ def predict_fn(input_data, model):
     bought_together = []
     fallback_items = []
 
-    # Get similar items using cosine similarity
+    # Similar items by cosine similarity
     if item_id in item_similarity_df.index:
         similar_items = item_similarity_df.loc[item_id]
-        filtered_similar = similar_items[(similar_items >= threshold) & (similar_items.index != item_id)]
-
+        filtered = similar_items[(similar_items >= threshold) & (similar_items.index != item_id)]
         if item_cat:
-            filtered_similar = filtered_similar[
-                filtered_similar.index.map(item_to_category.get) == item_cat
-            ]
-        bought_together = filtered_similar.sort_values(ascending=False).head(top_n).index.tolist()
+            filtered = filtered[filtered.index.map(item_to_category.get) == item_cat]
+        bought_together = filtered.sort_values(ascending=False).head(top_n).index.tolist()
 
-    # Fallback: top purchased items in the same category
+    # Top purchased items in same category
     if item_cat:
         cat_items = category_to_items.get(item_cat, [])
-        valid_cat_items = [item for item in cat_items if item != item_id and item in item_similarity_df.index]
-        if valid_cat_items:
+        valid_items = [item for item in cat_items if item != item_id and item in item_similarity_df.index]
+        if valid_items:
             purchase_counts = df_filtered[df_filtered["event"] == "transaction"]["itemid"].value_counts()
-            sorted_cat_items = sorted(valid_cat_items, key=lambda x: purchase_counts.get(x, 0), reverse=True)
-            fallback_items = sorted_cat_items[:4]
+            fallback_items = sorted(valid_items, key=lambda x: purchase_counts.get(x, 0), reverse=True)[:4]
 
     return {
         "selected_item": item_id,
