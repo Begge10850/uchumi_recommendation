@@ -1,86 +1,109 @@
 import streamlit as st
-import boto3
-import json
-import os
+import joblib
+import pandas as pd
 
-# Configuration
-ENDPOINT_NAME = os.getenv("SAGEMAKER_ENDPOINT", "retail-recommender-endpoint")
-REGION = os.getenv("AWS_REGION", "eu-central-1")
+# Load saved model files
+item_similarity_df = joblib.load("item_similarity.pkl")
+item_to_category = joblib.load("item_to_category.pkl")
+category_to_items = joblib.load("category_to_items.pkl")
+df_filtered = joblib.load("df_filtered.pkl")  # Your cleaned event data with transactions
 
-@st.cache_resource
-def get_runtime_client():
-    return boto3.client("sagemaker-runtime", region_name=REGION)
+# Helper function
+def recommend_items(item_id, top_n=5, threshold=0.75):
+    item_cat = item_to_category.get(item_id)
+    bought_together = []
+    fallback_items = []
 
-runtime = get_runtime_client()
+    # Step 1: Cosine similarity (items bought together)
+    if item_id in item_similarity_df.index:
+        similar_items = item_similarity_df.loc[item_id]
+        filtered_similar = similar_items[(similar_items >= threshold) & (similar_items.index != item_id)]
 
-@st.cache_data(ttl=300, show_spinner=False)
-def fetch_recommendations(item_id: int, top_n: int = 5, threshold: float = 0.75):
-    payload = {"item_id": item_id, "top_n": top_n, "threshold": threshold}
-    response = runtime.invoke_endpoint(
-        EndpointName=ENDPOINT_NAME,
-        ContentType="application/json",
-        Body=json.dumps(payload)
-    )
-    result = json.loads(response["Body"].read().decode())
-    return result
+        if item_cat:
+            filtered_similar = filtered_similar[
+                filtered_similar.index.map(item_to_category.get) == item_cat
+            ]
 
-st.title("🛍️ Uchumi Stores")
-st.markdown("Please select a product to Purchase.")
+        bought_together = filtered_similar.sort_values(ascending=False).head(top_n).index.tolist()
 
-# Example list of valid items - ideally fetch or cache from a config or API
-# Here we assume item IDs are integers
-item_input = st.number_input("Please Select Item", min_value=1, step=1)
-top_n = st.slider("How many suggestions?", 1, 20, 5)
-threshold = st.slider("Similarity threshold", 0.0, 1.0, 0.75, 0.01)
+    # Step 2: Most purchased items in same category (fallback)
+    if item_cat:
+        cat_items = category_to_items.get(item_cat, [])
+        valid_cat_items = [item for item in cat_items if item != item_id and item in item_similarity_df.index]
 
-if st.button("Get Recommendations"):
-    with st.spinner("Fetching recommendations..."):
-        result = fetch_recommendations(int(item_input), top_n, threshold)
-    if "error" in result:
-        st.error(result["error"])
-    else:
-        bought = result.get("bought_together", [])
-        fallback = result.get("fallback_items", [])
+        if valid_cat_items:
+            purchase_counts = df_filtered[df_filtered['event'] == 'transaction']['itemid'].value_counts()
+            sorted_cat_items = sorted(valid_cat_items, key=lambda x: purchase_counts.get(x, 0), reverse=True)
+            fallback_items = sorted_cat_items[:4]
 
-        st.subheader("🛒 Bought Together")
-        if bought:
-            for i, it in enumerate(bought):
-                col1, col2 = st.columns([4, 1])
-                with col1:
-                    st.write(f"- Item {it}")
-                with col2:
-                    if st.button("Add", key=f"add_bought_{it}"):
-                        st.session_state.basket.append(it)
-        else:
-            st.info("No co-purchased items found.")
+    return fallback_items, bought_together
 
-        st.subheader("🧩 Similar Items in Same Category")
-        if fallback:
-            for it in fallback:
-                col1, col2 = st.columns([4, 1])
-                with col1:
-                    st.write(f"- Item {it}")
-                with col2:
-                    if st.button("Add", key=f"add_fallback_{it}"):
-                        st.session_state.basket.append(it)
-        else:
-            st.info("No similar items found in category.")
+# Filter dropdown items to only those that exist in similarity matrix
+valid_dropdown_items = list(item_similarity_df.index)
 
-# Sidebar for basket
+# Initialize basket in session state
 if 'basket' not in st.session_state:
     st.session_state.basket = []
+
+# Streamlit UI
+st.title("🛍️ Product Recommendation System")
+st.markdown("Please click the dropdown menu to access the products.")
+
+selected_item = st.selectbox("", ["Select an item..."] + valid_dropdown_items)
+
+if selected_item != "Select an item...":
+    st.markdown("""
+        <div style="margin-top: 30px;"></div>
+    """, unsafe_allow_html=True)
+
+    st.markdown(f"### 🔎 You selected: Item {selected_item}")
+    if st.button("Add Selected Item to Basket"):
+        if selected_item not in st.session_state.basket:
+            st.session_state.basket.append(selected_item)
+
+    fallback_items, bought_together = recommend_items(selected_item)
+
+    st.markdown("---")
+    st.markdown("### 🧩 Similar items in the same category")
+    if fallback_items:
+        for item in fallback_items:
+            col1, col2 = st.columns([4, 1])
+            with col1:
+                st.write(f"- Item {item}")
+            with col2:
+                if st.button("Add", key=f"add_fallback_{item}"):
+                    if item not in st.session_state.basket:
+                        st.session_state.basket.append(item)
+    else:
+        st.info("No similar items found in the same category.")
+
+    st.markdown("---")
+    st.markdown("### 🛍️ Items bought together")
+    if bought_together:
+        for item in bought_together:
+            col1, col2 = st.columns([4, 1])
+            with col1:
+                st.write(f"- Item {item}")
+            with col2:
+                if st.button("Add", key=f"add_bought_{item}"):
+                    if item not in st.session_state.basket:
+                        st.session_state.basket.append(item)
+    else:
+        st.info("No co-purchased items found.")
+
+# Sidebar basket panel
 st.sidebar.title("🧺 Your Basket")
 if st.session_state.basket:
-    for idx, it in enumerate(st.session_state.basket):
+    for i, item in enumerate(st.session_state.basket):
         col1, col2 = st.sidebar.columns([4, 1])
         with col1:
-            st.sidebar.write(f"Item {it}")
+            st.sidebar.write(f"Item {item}")
         with col2:
-            if st.sidebar.button("❌", key=f"remove_{idx}"):
-                st.session_state.basket.pop(idx)
+            if st.sidebar.button("❌", key=f"remove_{i}"):
+                st.session_state.basket.pop(i)
                 st.experimental_rerun()
     if st.sidebar.button("Clear Basket"):
         st.session_state.basket.clear()
-        st.experimental_rerun()
+        st.rerun()
 else:
     st.sidebar.write("Your basket is empty.")
