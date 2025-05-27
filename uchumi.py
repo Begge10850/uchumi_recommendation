@@ -1,55 +1,51 @@
 import streamlit as st
+import boto3
+import json
+import os
 import joblib
 import pandas as pd
 
-# Load saved model files
-item_similarity_df = joblib.load("item_similarity.pkl")
-item_to_category = joblib.load("item_to_category.pkl")
-category_to_items = joblib.load("category_to_items.pkl")
-df_filtered = joblib.load("df_filtered.pkl")  # Your cleaned event data with transactions
+# ─── Configuration ───
+ENDPOINT_NAME = os.getenv("SAGEMAKER_ENDPOINT", "retail-recommender-endpoint")
+REGION = os.getenv("AWS_REGION", "eu-central-1")
 
-# Helper function
-def recommend_items(item_id, top_n=5, threshold=0.75):
-    item_cat = item_to_category.get(item_id)
-    bought_together = []
-    fallback_items = []
+# ─── Initialize SageMaker runtime client ───
+@st.cache_resource
+def get_runtime_client():
+    return boto3.client("sagemaker-runtime", region_name=REGION)
 
-    # Step 1: Cosine similarity (items bought together)
-    if item_id in item_similarity_df.index:
-        similar_items = item_similarity_df.loc[item_id]
-        filtered_similar = similar_items[(similar_items >= threshold) & (similar_items.index != item_id)]
+runtime = get_runtime_client()
 
-        if item_cat:
-            filtered_similar = filtered_similar[
-                filtered_similar.index.map(item_to_category.get) == item_cat
-            ]
+# ─── Call endpoint to fetch predictions ───
+@st.cache_data(ttl=300, show_spinner=False)
+def fetch_recommendations(item_id: int, top_n: int = 5, threshold: float = 0.75):
+    payload = {"item_id": item_id, "top_n": top_n, "threshold": threshold}
+    response = runtime.invoke_endpoint(
+        EndpointName=ENDPOINT_NAME,
+        ContentType="application/json",
+        Body=json.dumps(payload)
+    )
+    result = json.loads(response["Body"].read().decode())
+    return result
 
-        bought_together = filtered_similar.sort_values(ascending=False).head(top_n).index.tolist()
-
-    # Step 2: Most purchased items in same category (fallback)
-    if item_cat:
-        cat_items = category_to_items.get(item_cat, [])
-        valid_cat_items = [item for item in cat_items if item != item_id and item in item_similarity_df.index]
-
-        if valid_cat_items:
-            purchase_counts = df_filtered[df_filtered['event'] == 'transaction']['itemid'].value_counts()
-            sorted_cat_items = sorted(valid_cat_items, key=lambda x: purchase_counts.get(x, 0), reverse=True)
-            fallback_items = sorted_cat_items[:4]
-
-    return fallback_items, bought_together
-
-# Filter dropdown items to only those that exist in similarity matrix
-valid_dropdown_items = list(item_similarity_df.index)
-
-# Initialize basket in session state
-if 'basket' not in st.session_state:
-    st.session_state.basket = []
-
-# Streamlit UI
-st.title("🛍️ Product Recommendation System")
+# ─── UI ───
+st.title("🍭 UCHUMI STORE ")
 st.markdown("Please click the dropdown menu to access the products.")
 
+# Load product index from file (replace with your actual source)
+try:
+    item_similarity_df = joblib.load("item_similarity.pkl")
+    valid_dropdown_items = list(item_similarity_df.index.astype(str))
+except:
+    valid_dropdown_items = []
+
 selected_item = st.selectbox("", ["Select an item..."] + valid_dropdown_items)
+
+top_n = st.slider("How many suggestions?", 1, 20, 5)
+threshold = st.slider("Similarity threshold", 0.0, 1.0, 0.75, 0.01)
+
+if 'basket' not in st.session_state:
+    st.session_state.basket = []
 
 if selected_item != "Select an item...":
     st.markdown("""
@@ -61,7 +57,10 @@ if selected_item != "Select an item...":
         if selected_item not in st.session_state.basket:
             st.session_state.basket.append(selected_item)
 
-    fallback_items, bought_together = recommend_items(selected_item)
+    # Call SageMaker endpoint to get recommendations
+    result = fetch_recommendations(int(selected_item), top_n, threshold)
+    fallback_items = result.get("fallback_items", [])
+    bought_together = result.get("bought_together", [])
 
     st.markdown("---")
     st.markdown("### 🧩 Similar items in the same category")
@@ -78,7 +77,7 @@ if selected_item != "Select an item...":
         st.info("No similar items found in the same category.")
 
     st.markdown("---")
-    st.markdown("### 🛍️ Items bought together")
+    st.markdown("### 💹 Items bought together")
     if bought_together:
         for item in bought_together:
             col1, col2 = st.columns([4, 1])
@@ -104,6 +103,6 @@ if st.session_state.basket:
                 st.experimental_rerun()
     if st.sidebar.button("Clear Basket"):
         st.session_state.basket.clear()
-        st.rerun()
+        st.experimental_rerun()
 else:
     st.sidebar.write("Your basket is empty.")
