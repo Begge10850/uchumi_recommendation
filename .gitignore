@@ -1,2 +1,6 @@
 # ignore our big similarity pickle
-model/*.pklmodel/*.pkl
+model/category_to_items.pkl
+model/df_filtered.pkl
+model/item_similarity.pkl
+model/item_to_category.pkl
+.streamlit
