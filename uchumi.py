@@ -24,12 +24,12 @@ def fetch_recommendations(item_id: int, top_n: int = 5, threshold: float = 0.75)
     result = json.loads(response["Body"].read().decode())
     return result
 
-st.title("🛍️ Product Recommendation System")
-st.markdown("Please select a product to get recommendations.")
+st.title("🛍️ Uchumi Stores")
+st.markdown("Please select a product to Purchase.")
 
 # Example list of valid items - ideally fetch or cache from a config or API
 # Here we assume item IDs are integers
-item_input = st.number_input("Enter Item ID", min_value=1, step=1)
+item_input = st.number_input("Please Select Item", min_value=1, step=1)
 top_n = st.slider("How many suggestions?", 1, 20, 5)
 threshold = st.slider("Similarity threshold", 0.0, 1.0, 0.75, 0.01)
 
