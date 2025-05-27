@@ -2,19 +2,10 @@ import streamlit as st
 import boto3
 import json
 import os
-import joblib
-import pandas as pd
 
 # ─── Configuration ───
 ENDPOINT_NAME = os.getenv("SAGEMAKER_ENDPOINT", "retail-recommender-endpoint")
 REGION = os.getenv("AWS_REGION", "eu-central-1")
-
-# ─── Load item index for dropdown ───
-try:
-    item_similarity_df = joblib.load("item_similarity.pkl")
-    valid_dropdown_items = list(item_similarity_df.index.astype(str))
-except:
-    valid_dropdown_items = []
 
 # ─── Initialize SageMaker runtime client ───
 @st.cache_resource
@@ -23,24 +14,36 @@ def get_runtime_client():
 
 runtime = get_runtime_client()
 
-# ─── Call endpoint to fetch predictions ───
+# ─── Fetch valid product IDs from endpoint ───
+@st.cache_data(ttl=600)
+def get_valid_items():
+    response = runtime.invoke_endpoint(
+        EndpointName=ENDPOINT_NAME,
+        ContentType="application/json",
+        Body=json.dumps({"get_index": True})
+    )
+    return json.loads(response["Body"].read().decode()).get("valid_items", [])
+
+# ─── Call endpoint to fetch recommendations ───
 @st.cache_data(ttl=300, show_spinner=False)
 def fetch_recommendations(item_id: int):
-    payload = {"item_id": item_id, "top_n": 5, "threshold": 0.75}  # internal control
+    payload = {"item_id": item_id, "top_n": 5, "threshold": 0.75}
     response = runtime.invoke_endpoint(
         EndpointName=ENDPOINT_NAME,
         ContentType="application/json",
         Body=json.dumps(payload)
     )
-    result = json.loads(response["Body"].read().decode())
-    return result
+    return json.loads(response["Body"].read().decode())
 
 # ─── UI ───
 st.title("🍭 UCHUMI STORE")
 st.markdown("Please click the dropdown menu to access the products.")
 
+valid_dropdown_items = get_valid_items()
+
 selected_item = st.selectbox("", ["Select an item..."] + valid_dropdown_items)
 
+# Initialize basket in session state
 if 'basket' not in st.session_state:
     st.session_state.basket = []
 
@@ -54,7 +57,7 @@ if selected_item != "Select an item...":
         if selected_item not in st.session_state.basket:
             st.session_state.basket.append(selected_item)
 
-    # Call SageMaker endpoint to get recommendations
+    # Get predictions from SageMaker
     result = fetch_recommendations(int(selected_item))
     fallback_items = result.get("fallback_items", [])
     bought_together = result.get("bought_together", [])
