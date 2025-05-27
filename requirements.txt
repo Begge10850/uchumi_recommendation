@@ -1,8 +1,0 @@
-fastapi>=0.100.0
-uvicorn>=0.22.0
-pandas
-joblib
-scikit-learn
-streamlit
-gdown
-boto3>=1.24.0
