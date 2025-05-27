@@ -1,12 +1,3 @@
-'''try:
-    from pandas.core.internals.managers import _unpickle_block
-    import pandas._libs.internals as libinternals
-    libinternals._unpickle_block = _unpickle_block
-    print("✔️ Patch applied")
-except Exception as e:
-    print("⚠️ Patch failed:", e)'''
-
-
 # ─── 1) logging + standard imports ─────────────────────────────────────────────
 import logging, os, json, joblib, pandas as pd
 
@@ -39,12 +30,16 @@ def input_fn(request_body, content_type='application/json'):
         raise ValueError(f"Unsupported content type: {content_type}")
     payload = json.loads(request_body)
     logger.info("Received payload: %s", payload)
-    if "item_id" not in payload:
-        raise ValueError("Missing required field: item_id")
     return payload
 
 # ─── 4) predict_fn ─────────────────────────────────────────────────────────────
 def predict_fn(input_data, model):
+    if input_data.get("get_index"):
+        return {"valid_items": list(model["item_similarity"].index)}
+
+    if "item_id" not in input_data:
+        raise ValueError("Missing required field: item_id")
+
     item_id   = input_data["item_id"]
     top_n     = input_data.get("top_n", 5)
     threshold = input_data.get("threshold", 0.75)
