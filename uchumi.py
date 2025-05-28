@@ -120,19 +120,20 @@ if selected_item != "Select an item...":
     else:
         st.info("No co-purchased items found.")
 
-# Sidebar basket panel
+# ─── Sidebar basket panel ─────────────────────────────────────
 st.sidebar.title("🧺 Your Basket")
 if st.session_state.basket:
-    for i, item in enumerate(st.session_state.basket):
-        col1, col2 = st.sidebar.columns([4,1])
-        with col1:
-            st.sidebar.write(f"Item {item}")
-        with col2:
-            if st.sidebar.button("❌", key=f"remove_{i}"):
-                st.session_state.basket.pop(i)
-                st.experimental_rerun()
+    for item in list(st.session_state.basket):
+        cols = st.sidebar.columns([4, 1])
+        cols[0].write(f"Item {item}")
+        # Use a unique key per item
+        if cols[1].button("❌", key=f"remove_{item}"):
+            # Remove only this item
+            st.session_state.basket = [x for x in st.session_state.basket if x != item]
+            break
     if st.sidebar.button("Clear Basket"):
+        # Clear all items
         st.session_state.basket.clear()
-        st.experimental_rerun()
 else:
     st.sidebar.write("Your basket is empty.")
+    
