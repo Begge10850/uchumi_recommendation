@@ -38,8 +38,7 @@ def load_artifacts():
                 artifacts[fname] = pickle.load(f)
     return artifacts
 
-# Load artifacts
-art = load_artifacts()
+# Load artifacts\art = load_artifacts()
 sim_neighbors = art.get("sim_neighbors.pkl", {})
 counts        = art.get("counts.pkl", {})
 t2c           = art.get("item_to_category.pkl", {})
@@ -71,7 +70,8 @@ def fetch_recommendations(item_id: int, top_n: int = 5):
 st.title("🍭 UCHUMI STORE")
 st.markdown("Please click the dropdown menu to access the products.")
 
-# Dropdown of valid itemsalid_items = get_valid_items()
+# Dropdown of valid items
+valid_items = get_valid_items()
 selected_item = st.selectbox("", ["Select an item..."] + valid_items)
 
 # Initialize basket
@@ -87,7 +87,7 @@ if selected_item != "Select an item...":
 
     # Get recommendations
     result = fetch_recommendations(int(selected_item))
-    fallback_items   = result.get("fallback_items", [])
+    fallback_items = result.get("fallback_items", [])
     bought_together = result.get("bought_together", [])
 
     st.markdown("---")
@@ -134,6 +134,7 @@ if st.session_state.basket:
         st.experimental_rerun()
 else:
     st.sidebar.write("Your basket is empty.")
+
 
 
 '''''
