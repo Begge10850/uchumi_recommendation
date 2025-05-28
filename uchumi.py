@@ -3,18 +3,17 @@ import tarfile
 import pickle
 import streamlit as st
 import boto3
-import pandas as pd
 
 # ─── Configuration ───────────────────────────────────────────
-BUCKET_NAME = "retail-recommender"        
-MODEL_TAR_KEY = "models.tar.gz"           # path in S3
-REGION = "eu-central-1"                   # your AWS region
+BUCKET_NAME = "retail-recommender"
+MODEL_TAR_KEY = "models.tar.gz"
+REGION = "eu-central-1"
 
 # ─── Download & load model artifacts ─────────────────────────
 @st.cache_resource
-def load_models():
-    # Download the tar.gz if not present
-    local_tar = "models.tar.gz"
+def load_artifacts():
+    local_tar = MODEL_TAR_KEY
+    # Download the tar.gz from S3 if not present
     if not os.path.exists(local_tar):
         s3 = boto3.client(
             "s3",
@@ -24,7 +23,7 @@ def load_models():
         )
         s3.download_file(BUCKET_NAME, MODEL_TAR_KEY, local_tar)
 
-    
+    # Extract into local folder
     extract_dir = "models"
     if not os.path.isdir(extract_dir):
         with tarfile.open(local_tar, "r:gz") as tar:
@@ -39,49 +38,40 @@ def load_models():
                 artifacts[fname] = pickle.load(f)
     return artifacts
 
-models = load_models()
-# Unpack artifacts
-sim_df    = models.get("item_similarity.pkl")
-t2c       = models.get("item_to_category.pkl")
-c2i       = models.get("category_to_items.pkl")
-df_filtered = models.get("df_filtered.pkl")
+# Load artifacts
+art = load_artifacts()
+sim_neighbors = art.get("sim_neighbors.pkl", {})
+counts        = art.get("counts.pkl", {})
+t2c           = art.get("item_to_category.pkl", {})
+c2i           = art.get("category_to_items.pkl", {})
 
-# ─── Helper functions ──────────────────────────────────────────
+# ─── Helper functions ─────────────────────────────────────────
 def get_valid_items():
-    return list(sim_df.index)
+    """Return all available item IDs."""
+    return list(sim_neighbors.keys())
 
 @st.cache_data(ttl=300)
-def fetch_recommendations(item_id: int, top_n: int = 5, threshold: float = 0.75):
-    # If item not in index
-    if item_id not in sim_df.index:
-        return {"error": f"Item ID {item_id} not found."}
+def fetch_recommendations(item_id: int, top_n: int = 5):
+    """Fetch top_n similar items and fallback recommendations."""
+    # Precomputed bought-together neighbors
+    bought = sim_neighbors.get(item_id, [])[:top_n]
 
-    # Bought together
-    s = sim_df.loc[item_id]
-    s = s[(s >= threshold) & (s.index != item_id)]
+    # Fallback: most popular in same category
     cat = t2c.get(item_id)
-    if cat:
-        s = s[s.index.map(t2c.get) == cat]
-    bought = s.sort_values(ascending=False).head(top_n).index.tolist()
+    candidates = [i for i in c2i.get(cat, []) if i != item_id]
+    fallback = sorted(
+        candidates,
+        key=lambda i: counts.get(i, 0),
+        reverse=True
+    )[:4]
 
-    # Fallback: popular in same category
-    fallback = []
-    if cat:
-        candidates = [i for i in c2i.get(cat, []) if i != item_id and i in sim_df.index]
-        if candidates:
-            counts = df_filtered[df_filtered.event == "transaction"].itemid.value_counts()
-            fallback = sorted(
-                candidates,
-                key=lambda i: counts.get(i, 0),
-                reverse=True
-            )[:4]
     return {"bought_together": bought, "fallback_items": fallback}
 
 # ─── Streamlit UI ─────────────────────────────────────────────
 st.title("🍭 UCHUMI STORE")
 st.markdown("Please click the dropdown menu to access the products.")
 
-valid_items = get_valid_items()
+# Dropdown of valid itemsalid_items = get_valid_items()
 selected_item = st.selectbox("", ["Select an item..."] + valid_items)
 
 # Initialize basket
@@ -95,8 +85,9 @@ if selected_item != "Select an item...":
         if selected_item not in st.session_state.basket:
             st.session_state.basket.append(selected_item)
 
+    # Get recommendations
     result = fetch_recommendations(int(selected_item))
-    fallback_items = result.get("fallback_items", [])
+    fallback_items   = result.get("fallback_items", [])
     bought_together = result.get("bought_together", [])
 
     st.markdown("---")
