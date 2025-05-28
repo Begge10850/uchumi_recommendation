@@ -7,14 +7,14 @@ import pandas as pd
 
 # ─── Configuration ───────────────────────────────────────────
 BUCKET_NAME = "retail-recommender"        
-MODEL_TAR_KEY = "model.tar.gz"           # path in S3
+MODEL_TAR_KEY = "models.tar.gz"           # path in S3
 REGION = "eu-central-1"                   # your AWS region
 
 # ─── Download & load model artifacts ─────────────────────────
 @st.cache_resource
 def load_models():
     # Download the tar.gz if not present
-    local_tar = "model.tar.gz"
+    local_tar = "models.tar.gz"
     if not os.path.exists(local_tar):
         s3 = boto3.client(
             "s3",

@@ -4,3 +4,4 @@ model/df_filtered.pkl
 model/item_similarity.pkl
 model/item_to_category.pkl
 .streamlit
+new_models
