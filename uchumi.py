@@ -89,7 +89,7 @@ if selected_item != "Select an item...":
 
     # Get recommendations
     result = fetch_recommendations(int(selected_item))
-    fallback_items = result.get("fallback_items", [])
+    fallback_items   = result.get("fallback_items", [])
     bought_together = result.get("bought_together", [])
 
     st.markdown("---")
@@ -126,14 +126,11 @@ if st.session_state.basket:
     for item in list(st.session_state.basket):
         cols = st.sidebar.columns([4, 1])
         cols[0].write(f"Item {item}")
-        # Use a unique key per item
         if cols[1].button("❌", key=f"remove_{item}"):
-            # Remove only this item
+            # Remove only this item and force immediate rerun
             st.session_state.basket = [x for x in st.session_state.basket if x != item]
             break
     if st.sidebar.button("Clear Basket"):
-        # Clear all items
         st.session_state.basket.clear()
 else:
     st.sidebar.write("Your basket is empty.")
-    
