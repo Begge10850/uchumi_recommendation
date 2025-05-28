@@ -38,7 +38,9 @@ def load_artifacts():
                 artifacts[fname] = pickle.load(f)
     return artifacts
 
-# Load artifacts\art = load_artifacts()
+# ─── Load artifacts ───────────────────────────────────────────
+art = load_artifacts()
+# sim_neighbors.pkl, counts.pkl, item_to_category.pkl, category_to_items.pkl
 sim_neighbors = art.get("sim_neighbors.pkl", {})
 counts        = art.get("counts.pkl", {})
 t2c           = art.get("item_to_category.pkl", {})
@@ -134,6 +136,7 @@ if st.session_state.basket:
         st.experimental_rerun()
 else:
     st.sidebar.write("Your basket is empty.")
+
 
 
 
