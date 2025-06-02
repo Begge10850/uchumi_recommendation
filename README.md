@@ -126,22 +126,23 @@ Prepare a virtual environment (recommended):
 🔔 Note: You need local copies of the raw CSVs referenced in retail_cleaning.ipynb (e.g., events.csv, category_tree.csv, item_properties.csv). Update paths inside the notebook if necessary.
 
 1️⃣ Open and run retail_cleaning.ipynb in a Jupyter environment.
+
    This creates:
-   • df_filtered.pkl
-   • item_similarity.pkl
-   • item_to_category.pkl
-   • category_to_items.pkl
+   1. df_filtered.pkl
+   2. item_similarity.pkl
+   3. item_to_category.pkl
+   4. category_to_items.pkl
 
 2️⃣ Run the artifact–building script:
    python make_artifacts.py
    Outputs:
-   • sim_neighbors.pkl
-   • counts.pkl
-   • (Re‐saves) item_to_category.pkl & category_to_items.pkl
+   1. sim_neighbors.pkl
+   2. counts.pkl
+   3. (Re‐saves) item_to_category.pkl & category_to_items.pkl
 
 3️⃣ Bundle all final artifacts into one archive:
-   python bundle_models.py
-   Produces models.tar.gz in the project root.
+   - python bundle_models.py
+   - Produces models.tar.gz in the project root.
 
 # Upload to S3
   1. Create an S3 bucket (e.g., retail-recommender) in eu-central-1 (Frankfurt). ☁️
@@ -158,21 +159,21 @@ Prepare a virtual environment (recommended):
   The app automatically downloads models.tar.gz from S3 the first time (cached thereafter) and loads the recommendation artifacts.
 
 # 🛠️ Tools & Libraries Used
-Python 3.8+ 🐍
+1. Python 3.8+ 🐍
 
-pandas, numpy (data wrangling in Jupyter) 📊
+2. pandas, numpy (data wrangling in Jupyter) 📊
 
-scikit-learn (e.g., cosine_similarity for computing similarity matrices) 🔬
+3. scikit-learn (e.g., cosine_similarity for computing similarity matrices) 🔬
 
-joblib (serialize/deserealize large DataFrames and dictionaries) 💼
+4. joblib (serialize/deserealize large DataFrames and dictionaries) 💼
 
-tarfile (bundle models into a compressed archive) 📦
+5. tarfile (bundle models into a compressed archive) 📦
 
-Streamlit (front-end, interactive web UI) 🌐
+6. Streamlit (front-end, interactive web UI) 🌐
 
-boto3 (AWS S3 integration to fetch model artifacts) ☁️
+7. boto3 (AWS S3 integration to fetch model artifacts) ☁️
 
-AWS S3 (cloud storage for model artifacts) 📥
+8. AWS S3 (cloud storage for model artifacts) 📥
 
 # 🏆 Achievements
 1. End-to-End Data-Driven Recommendation Pipeline
