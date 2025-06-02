@@ -162,9 +162,9 @@ Prepare a virtual environment (recommended):
   4. Adjust uchumi.py if your bucket name or region differs.
 
 # Run the Streamlit App
-  streamlit run uchumi.py 🏃
-  This will launch a local Streamlit server (e.g., http://localhost:8501).
-  The app automatically downloads models.tar.gz from S3 the first time (cached thereafter) and loads the recommendation artifacts.
+  - streamlit run uchumi.py 🏃
+  - This will launch a Streamlit server.
+  - The app automatically downloads models.tar.gz from S3 the first time (cached thereafter) and loads the recommendation artifacts.
 
 # 🛠️ Tools & Libraries Used
 1. Python 3.8+ 🐍
@@ -213,6 +213,9 @@ One can easily retrain or update similarity thresholds (e.g., change THRESHOLD i
 
 # 🔐 License & Attribution
 Copyright © 2025 Treva Ogwang. All Rights Reserved.
+
 No portion of this work may be reproduced, distributed, or modified without prior written permission from the author. 🛡️
 
-Thank you for exploring the UCHUMI STORE Recommender System! Feel free to dive into each component, tweak thresholds, or extend the UI with more advanced filtering (e.g., by price, brand, or user ratings). If you have questions or feature requests, please open an issue or pull request. ✨
+Thank you for exploring the UCHUMI STORE Recommender System! Feel free to dive into each component, tweak thresholds, or extend the UI with more advanced filtering (e.g., by price, brand, or user ratings). 
+
+If you have questions or feature requests, please open an issue or pull request. ✨
