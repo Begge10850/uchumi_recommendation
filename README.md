@@ -38,25 +38,25 @@ Jupyter notebook that:
 # make_artifacts.py ⚙️
 Loads the precomputed artifacts from disk:
 
-sim_df       = joblib.load("item_similarity.pkl")
-
-df_filtered  = joblib.load("df_filtered.pkl")
-
-item_to_cat  = joblib.load("item_to_category.pkl")
-
-cat_to_items = joblib.load("category_to_items.pkl")
+    sim_df       = joblib.load("item_similarity.pkl")
+    
+    df_filtered  = joblib.load("df_filtered.pkl")
+    
+    item_to_cat  = joblib.load("item_to_category.pkl")
+    
+    cat_to_items = joblib.load("category_to_items.pkl")
 
 
 # 🤝 Computes “neighbors”:
 For each item, retains up to 10 neighbors whose similarity ≥ 0.75 and belong to the same category. 
 Stores the top‐10 sorted neighbor item IDs in a dictionary:
 
-sim_neighbors[item_id] = [neighbor_id_1, neighbor_id_2, …]  # sorted by descending similarity
+    sim_neighbors[item_id] = [neighbor_id_1, neighbor_id_2, …]  # sorted by descending similarity
 
 # 🔢 Computes transaction counts:
 Counts how often each item appears in a “transaction” event:
 
-counts = df_filtered[df_filtered.event == "transaction"].itemid.value_counts().to_dict()
+    counts = df_filtered[df_filtered.event == "transaction"].itemid.value_counts().to_dict()
 
 # 💾 Stores final artifacts (via joblib.dump):
 sim_neighbors.pkl
@@ -66,19 +66,19 @@ Re‐saves item_to_category.pkl and category_to_items.pkl for downstream use.
 # bundle_models.py 📦
 - Packages the four final artifact files (sim_neighbors.pkl, counts.pkl, item_to_category.pkl, category_to_items.pkl) into a compressed archive (models.tar.gz) so they can be uploaded/deployed as a single object.
 
-import tarfile
-
-files = [
-    "sim_neighbors.pkl",
-    "counts.pkl",
-    "item_to_category.pkl",
-    "category_to_items.pkl",
-]
-
-with tarfile.open("models.tar.gz", "w:gz") as tar:
-    for f in files:
-        tar.add(f)
-print("✅ models.tar.gz created")
+        import tarfile
+        
+        files = [
+            "sim_neighbors.pkl",
+            "counts.pkl",
+            "item_to_category.pkl",
+            "category_to_items.pkl",
+        ]
+        
+        with tarfile.open("models.tar.gz", "w:gz") as tar:
+            for f in files:
+                tar.add(f)
+        print("✅ models.tar.gz created")
 
 # requirements.txt
 Lists Python dependencies:
@@ -128,6 +128,7 @@ Lists Python dependencies:
 Clone the repository (or copy these files into a local folder).
 
 Prepare a virtual environment (recommended):
+
   python3 -m venv .venv
   source .venv/bin/activate
   pip install --upgrade pip
@@ -159,14 +160,15 @@ Prepare a virtual environment (recommended):
   1. Create an S3 bucket (e.g., retail-recommender) in eu-central-1 (Frankfurt). ☁️  
   2. Upload models.tar.gz to the bucket under the key models.tar.gz.  
   3. In your local environment, create a secrets.toml file for Streamlit (e.g., in ~/.streamlit/credentials.toml or in the repository under .streamlit/):  
-     [AWS]  
-     AWS_ACCESS_KEY_ID = "<YOUR_ACCESS_KEY_ID>"
+         [AWS]
+         
+         AWS_ACCESS_KEY_ID = "<YOUR_ACCESS_KEY_ID>"
+         
+         AWS_SECRET_ACCESS_KEY = "<YOUR_SECRET_ACCESS_KEY>"
+         
+         AWS_REGION = "eu-central-1"  # (or your bucket’s region)
      
-     AWS_SECRET_ACCESS_KEY = "<YOUR_SECRET_ACCESS_KEY>"
-     
-     AWS_REGION = "eu-central-1"  # (or your bucket’s region)
-     
-  4. Adjust uchumi.py if your bucket name or region differs.
+  5. Adjust uchumi.py if your bucket name or region differs.
 
 # Run the Streamlit App
   - streamlit run uchumi.py 🏃
@@ -177,59 +179,59 @@ Prepare a virtual environment (recommended):
 1️⃣ Configure st.secrets in Streamlit Cloud
 In your Streamlit Cloud app’s Secrets section, add:
 
-[AWS]
-
-AWS_ACCESS_KEY_ID = "YOUR_ACCESS_KEY_ID"
-
-AWS_SECRET_ACCESS_KEY = "YOUR_SECRET_ACCESS_KEY"
-
-AWS_REGION = "eu-central-1"
+    [AWS]
+    
+    AWS_ACCESS_KEY_ID = "YOUR_ACCESS_KEY_ID"
+    
+    AWS_SECRET_ACCESS_KEY = "YOUR_SECRET_ACCESS_KEY"
+    
+    AWS_REGION = "eu-central-1"
 
 Streamlit will provide these values at runtime as st.secrets["AWS"]["AWS_ACCESS_KEY_ID"], etc.
 
 2️⃣ Initialize the boto3 client inside uchumi.py
 
-import streamlit as st
-import boto3
-import tarfile
-import joblib
-
-aws_key    = st.secrets["AWS"]["AWS_ACCESS_KEY_ID"]
-
-aws_secret = st.secrets["AWS"]["AWS_SECRET_ACCESS_KEY"]
-
-region     = st.secrets["AWS"].get("AWS_REGION", "eu-central-1")
-
-s3 = boto3.client(
-    "s3",
-    aws_access_key_id=aws_key,
-    aws_secret_access_key=aws_secret,
-    region_name=region
-)
+    import streamlit as st
+    import boto3
+    import tarfile
+    import joblib
+    
+    aws_key    = st.secrets["AWS"]["AWS_ACCESS_KEY_ID"]
+    
+    aws_secret = st.secrets["AWS"]["AWS_SECRET_ACCESS_KEY"]
+    
+    region     = st.secrets["AWS"].get("AWS_REGION", "eu-central-1")
+    
+    s3 = boto3.client(
+        "s3",
+        aws_access_key_id=aws_key,
+        aws_secret_access_key=aws_secret,
+        region_name=region
+    )
 
 3️⃣ Download & Cache Artifacts from S3
 Use Streamlit’s caching decorator to avoid repeated downloads:
 
-@st.cache_data
-def load_artifacts_from_s3(bucket_name: str, object_key: str, local_tar_path: str = "models.tar.gz"):
-    """Download models.tar.gz from S3 and extract pickle files."""
-    st.info("🔄 Downloading model artifacts from S3…")
-    s3.download_file(bucket_name, object_key, local_tar_path)
-
-    with tarfile.open(local_tar_path, "r:gz") as tar:
-        tar.extractall(path="models/")
-    st.success("✅ Artifacts loaded.")
-
-    sim_neighbors = joblib.load("models/sim_neighbors.pkl")
-    counts        = joblib.load("models/counts.pkl")
-    t2c           = joblib.load("models/item_to_category.pkl")
-    c2i           = joblib.load("models/category_to_items.pkl")
-    return sim_neighbors, counts, t2c, c2i
-
-sim_neighbors, counts, item_to_category, category_to_items = load_artifacts_from_s3(
-    bucket_name="retail-recommender",
-    object_key="models.tar.gz"
-)
+    @st.cache_data
+    def load_artifacts_from_s3(bucket_name: str, object_key: str, local_tar_path: str = "models.tar.gz"):
+        """Download models.tar.gz from S3 and extract pickle files."""
+        st.info("🔄 Downloading model artifacts from S3…")
+        s3.download_file(bucket_name, object_key, local_tar_path)
+    
+        with tarfile.open(local_tar_path, "r:gz") as tar:
+            tar.extractall(path="models/")
+        st.success("✅ Artifacts loaded.")
+    
+        sim_neighbors = joblib.load("models/sim_neighbors.pkl")
+        counts        = joblib.load("models/counts.pkl")
+        t2c           = joblib.load("models/item_to_category.pkl")
+        c2i           = joblib.load("models/category_to_items.pkl")
+        return sim_neighbors, counts, t2c, c2i
+    
+    sim_neighbors, counts, item_to_category, category_to_items = load_artifacts_from_s3(
+        bucket_name="retail-recommender",
+        object_key="models.tar.gz"
+    )
 
 4️⃣ Verify S3 Permissions
 
@@ -237,23 +239,20 @@ Ensure your S3 bucket policy allows s3:GetObject on models.tar.gz for the IAM us
 
 Example policy snippet:
 
-json
-Copy
-Edit
-{
-  "Version": "2012-10-17",
-  "Statement": [
     {
-      "Sid": "AllowReadAccess",
-      "Effect": "Allow",
-      "Principal": {
-        "AWS": "arn:aws:iam::YOUR_ACCOUNT_ID:user/YOUR_IAM_USER"
-      },
-      "Action": "s3:GetObject",
-      "Resource": "arn:aws:s3:::retail-recommender/models.tar.gz"
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "AllowReadAccess",
+          "Effect": "Allow",
+          "Principal": {
+            "AWS": "arn:aws:iam::YOUR_ACCOUNT_ID:user/YOUR_IAM_USER"
+          },
+          "Action": "s3:GetObject",
+          "Resource": "arn:aws:s3:::retail-recommender/models.tar.gz"
+        }
+      ]
     }
-  ]
-}
 
 5️⃣ Check Streamlit Cloud Logs
 
@@ -263,13 +262,13 @@ If anything goes wrong (e.g., AccessDenied), open your app’s “Logs” tab in
 
 If your bucket uses a custom endpoint or different region, set it explicitly:
 
-s3 = boto3.client(
-    "s3",
-    aws_access_key_id=aws_key,
-    aws_secret_access_key=aws_secret,
-    region_name="eu-central-1",
-    endpoint_url="https://s3.eu-central-1.amazonaws.com"
-)
+    s3 = boto3.client(
+        "s3",
+        aws_access_key_id=aws_key,
+        aws_secret_access_key=aws_secret,
+        region_name="eu-central-1",
+        endpoint_url="https://s3.eu-central-1.amazonaws.com"
+    )
 
 # 🛠️ Tools & Libraries Used
 1. Python 3.8+ 🐍
