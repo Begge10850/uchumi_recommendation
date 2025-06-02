@@ -64,7 +64,7 @@ counts.pkl
 Re‐saves item_to_category.pkl and category_to_items.pkl for downstream use.
 
 # bundle_models.py 📦
--- Packages the four final artifact files (sim_neighbors.pkl, counts.pkl, item_to_category.pkl, category_to_items.pkl) into a compressed archive (models.tar.gz) so they can be uploaded/deployed as a single object.
+- Packages the four final artifact files (sim_neighbors.pkl, counts.pkl, item_to_category.pkl, category_to_items.pkl) into a compressed archive (models.tar.gz) so they can be uploaded/deployed as a single object.
 
 import tarfile
 
