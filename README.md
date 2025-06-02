@@ -44,13 +44,17 @@ item_to_cat  = joblib.load("item_to_category.pkl")
 cat_to_items = joblib.load("category_to_items.pkl")
 
 # 🤝 Computes “neighbors”:
-For each item, retains up to 10 neighbors whose similarity ≥ 0.75 and belong to the same category. Stores the top‐10 sorted neighbor item IDs in a dictionary:
+For each item, retains up to 10 neighbors whose similarity ≥ 0.75 and belong to the same category. 
+Stores the top‐10 sorted neighbor item IDs in a dictionary:
+
 sim_neighbors[item_id] = [neighbor_id_1, neighbor_id_2, …]  # sorted by descending similarity
 
 # 🔢 Computes transaction counts:
 Counts how often each item appears in a “transaction” event:
+
 counts = df_filtered[df_filtered.event == "transaction"].itemid.value_counts().to_dict()
-💾 Stores final artifacts (via joblib.dump):
+
+# 💾 Stores final artifacts (via joblib.dump):
 sim_neighbors.pkl
 counts.pkl
 Re‐saves item_to_category.pkl and category_to_items.pkl for downstream use.
