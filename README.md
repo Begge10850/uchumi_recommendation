@@ -3,6 +3,24 @@
 ## 📝 Overview
 This project implements an end-to-end retail recommender system for the “UCHUMI STORE,” guiding users to discover products that are similar (same‐category) or frequently co‐purchased. The pipeline begins with raw event and item data, proceeds through data cleaning and similarity computation, and culminates in a live Streamlit web application that fetches artifacts from AWS S3 and presents personalized recommendations. 🚀
 
+🔗 **Live App:** [View the UCHUMI STORE Recommender on Streamlit](https://uchumi-store.streamlit.app/)
+
+---
+
+## 📸 Screenshots
+Here are a few views of the deployed Streamlit app.
+
+1️⃣ **App Homepage**  
+![App Homepage](https://github.com/Begge10850/uchumi_recommendation/blob/main/app_images/Home_page.png)
+
+2️⃣ **Sample Product 1**  
+![Category & Basket](https://github.com/Begge10850/uchumi_recommendation/blob/main/app_images/sample_product_1.png)
+
+3️⃣ **Sample Product 2**  
+![Recommendations](https://github.com/Begge10850/uchumi_recommendation/blob/main/app_images/sample_product_2.png)
+
+---
+
 ## 📂 Project Structure
 1. .gitignore
 2. bundle_models.py
