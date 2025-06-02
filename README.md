@@ -25,15 +25,15 @@ Jupyter notebook that:
 
 📦 Produces two primary artifacts:
 
-- df_filtered.pkl: Filtered DataFrame of transactions.
+1. df_filtered.pkl: Filtered DataFrame of transactions.
 
-- item_similarity.pkl: Square matrix (DataFrame) of pairwise similarity scores between items.
+2. item_similarity.pkl: Square matrix (DataFrame) of pairwise similarity scores between items.
 
 - 🗺️ Also outputs mapping dictionaries:
 
-- item_to_category.pkl: Maps each item ID to its category.
+1. item_to_category.pkl: Maps each item ID to its category.
 
-- category_to_items.pkl: For each category, lists all item IDs belonging to it.
+2. category_to_items.pkl: For each category, lists all item IDs belonging to it.
 
 # make_artifacts.py ⚙️
 Loads the precomputed artifacts from disk:
