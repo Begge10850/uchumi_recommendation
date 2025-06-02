@@ -102,8 +102,11 @@ Lists Python dependencies:
 
 # 🔧 Defines helper functions:
   - get_valid_items(): Returns a list of item IDs (keys of sim_neighbors).
+    
   - fetch_recommendations(item_id, top_n=5):
+    
     • Retrieves up to top_n “bought together” items from sim_neighbors[item_id]. 🛍️
+    
     • Identifies “fallback” items by selecting the most popular items in the same category (excluding the selected item) from the counts dictionary, limited to 4 candidates. ⭐
 
 # 🖼️ Builds the Streamlit UI:
@@ -157,9 +160,12 @@ Prepare a virtual environment (recommended):
   2. Upload models.tar.gz to the bucket under the key models.tar.gz.
   3. In your local environment, create a secrets.toml file for Streamlit (e.g., in ~/.streamlit/credentials.toml or in the repository under .streamlit/):
      - [AWS]
-     1. AWS_ACCESS_KEY_ID = **"<YOUR_ACCESS_KEY_ID>"**
-     2. AWS_SECRET_ACCESS_KEY = **"<YOUR_SECRET_ACCESS_KEY>"**
-  4. Adjust uchumi.py if your bucket name or region differs.
+       
+      AWS_ACCESS_KEY_ID = **"<YOUR_ACCESS_KEY_ID>"**
+     
+      AWS_SECRET_ACCESS_KEY = **"<YOUR_SECRET_ACCESS_KEY>"**
+     
+  5. Adjust uchumi.py if your bucket name or region differs.
 
 # Run the Streamlit App
   - streamlit run uchumi.py 🏃
