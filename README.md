@@ -5,12 +5,12 @@
 This project implements an end-to-end retail recommender system for the “UCHUMI STORE,” guiding users to discover products that are similar (same‐category) or frequently co‐purchased. The pipeline begins with raw event and item data, proceeds through data cleaning and similarity computation, and culminates in a live Streamlit web application that fetches artifacts from AWS S3 and presents personalized recommendations. 🚀
 
 ## 📂 Project Structure
-.gitignore
-bundle_models.py
-make_artifacts.py
-requirements.txt
-retail_cleaning.ipynb
-uchumi.py
+1. .gitignore\
+2. bundle_models.py\
+3. make_artifacts.py\
+4. requirements.txt\
+5. retail_cleaning.ipynb\
+6. uchumi.py
 
 # .gitignore 🛡️
 Specifies files and directories to exclude from version control (e.g., large pickle files, model artifacts, .streamlit/, intermediate notebooks).
