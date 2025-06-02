@@ -156,21 +156,120 @@ Prepare a virtual environment (recommended):
    - Produces models.tar.gz in the project root.
 
 # Upload to S3
-  1. Create an S3 bucket (e.g., retail-recommender) in eu-central-1 (Frankfurt). ☁️
-  2. Upload models.tar.gz to the bucket under the key models.tar.gz.
-  3. In your local environment, create a secrets.toml file for Streamlit (e.g., in ~/.streamlit/credentials.toml or in the repository under .streamlit/):
-     - [AWS]
-       
-      AWS_ACCESS_KEY_ID = **"<YOUR_ACCESS_KEY_ID>"**
+  1. Create an S3 bucket (e.g., retail-recommender) in eu-central-1 (Frankfurt). ☁️  
+  2. Upload models.tar.gz to the bucket under the key models.tar.gz.  
+  3. In your local environment, create a secrets.toml file for Streamlit (e.g., in ~/.streamlit/credentials.toml or in the repository under .streamlit/):  
+     [AWS]  
+     AWS_ACCESS_KEY_ID = "<YOUR_ACCESS_KEY_ID>"
      
-      AWS_SECRET_ACCESS_KEY = **"<YOUR_SECRET_ACCESS_KEY>"**
+     AWS_SECRET_ACCESS_KEY = "<YOUR_SECRET_ACCESS_KEY>"
      
-  5. Adjust uchumi.py if your bucket name or region differs.
+     AWS_REGION = "eu-central-1"  # (or your bucket’s region)
+     
+  4. Adjust uchumi.py if your bucket name or region differs.
 
 # Run the Streamlit App
   - streamlit run uchumi.py 🏃
   - This will launch a Streamlit server.
   - The app automatically downloads models.tar.gz from S3 the first time (cached thereafter) and loads the recommendation artifacts.
+
+# 🔒 AWS & Streamlit Cloud Setup
+1️⃣ Configure st.secrets in Streamlit Cloud
+In your Streamlit Cloud app’s Secrets section, add:
+
+[AWS]
+
+AWS_ACCESS_KEY_ID = "YOUR_ACCESS_KEY_ID"
+
+AWS_SECRET_ACCESS_KEY = "YOUR_SECRET_ACCESS_KEY"
+
+AWS_REGION = "eu-central-1"
+
+Streamlit will provide these values at runtime as st.secrets["AWS"]["AWS_ACCESS_KEY_ID"], etc.
+
+2️⃣ Initialize the boto3 client inside uchumi.py
+
+import streamlit as st
+import boto3
+import tarfile
+import joblib
+
+aws_key    = st.secrets["AWS"]["AWS_ACCESS_KEY_ID"]
+
+aws_secret = st.secrets["AWS"]["AWS_SECRET_ACCESS_KEY"]
+
+region     = st.secrets["AWS"].get("AWS_REGION", "eu-central-1")
+
+s3 = boto3.client(
+    "s3",
+    aws_access_key_id=aws_key,
+    aws_secret_access_key=aws_secret,
+    region_name=region
+)
+
+3️⃣ Download & Cache Artifacts from S3
+Use Streamlit’s caching decorator to avoid repeated downloads:
+
+@st.cache_data
+def load_artifacts_from_s3(bucket_name: str, object_key: str, local_tar_path: str = "models.tar.gz"):
+    """Download models.tar.gz from S3 and extract pickle files."""
+    st.info("🔄 Downloading model artifacts from S3…")
+    s3.download_file(bucket_name, object_key, local_tar_path)
+
+    with tarfile.open(local_tar_path, "r:gz") as tar:
+        tar.extractall(path="models/")
+    st.success("✅ Artifacts loaded.")
+
+    sim_neighbors = joblib.load("models/sim_neighbors.pkl")
+    counts        = joblib.load("models/counts.pkl")
+    t2c           = joblib.load("models/item_to_category.pkl")
+    c2i           = joblib.load("models/category_to_items.pkl")
+    return sim_neighbors, counts, t2c, c2i
+
+sim_neighbors, counts, item_to_category, category_to_items = load_artifacts_from_s3(
+    bucket_name="retail-recommender",
+    object_key="models.tar.gz"
+)
+
+4️⃣ Verify S3 Permissions
+
+Ensure your S3 bucket policy allows s3:GetObject on models.tar.gz for the IAM user whose credentials you supplied.
+
+Example policy snippet:
+
+json
+Copy
+Edit
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowReadAccess",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::YOUR_ACCOUNT_ID:user/YOUR_IAM_USER"
+      },
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::retail-recommender/models.tar.gz"
+    }
+  ]
+}
+
+5️⃣ Check Streamlit Cloud Logs
+
+If anything goes wrong (e.g., AccessDenied), open your app’s “Logs” tab in Streamlit Cloud to see the boto3 error messages.
+
+6️⃣ Region & Endpoint Configuration
+
+If your bucket uses a custom endpoint or different region, set it explicitly:
+
+s3 = boto3.client(
+    "s3",
+    aws_access_key_id=aws_key,
+    aws_secret_access_key=aws_secret,
+    region_name="eu-central-1",
+    endpoint_url="https://s3.eu-central-1.amazonaws.com"
+)
 
 # 🛠️ Tools & Libraries Used
 1. Python 3.8+ 🐍
