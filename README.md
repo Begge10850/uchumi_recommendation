@@ -3,7 +3,7 @@
 ## 📝 Overview
 This project implements an end-to-end retail recommender system for the “UCHUMI STORE,” guiding users to discover products that are similar (same‐category) or frequently co‐purchased. The pipeline begins with raw event and item data, proceeds through data cleaning and similarity computation, and culminates in a live Streamlit web application that fetches artifacts from AWS S3 and presents personalized recommendations. 🚀
 
-🔗 **Live App:** [View the UCHUMI STORE Recommender on Streamlit](https://uchumi-store.streamlit.app/)
+🔗 **Live App hosted on Streamlit:** [UCHUMI STORE Recommender](https://uchumi-store.streamlit.app/)
 
 ---
 
