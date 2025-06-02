@@ -156,9 +156,9 @@ Prepare a virtual environment (recommended):
   1. Create an S3 bucket (e.g., retail-recommender) in eu-central-1 (Frankfurt). ☁️
   2. Upload models.tar.gz to the bucket under the key models.tar.gz.
   3. In your local environment, create a secrets.toml file for Streamlit (e.g., in ~/.streamlit/credentials.toml or in the repository under .streamlit/):
-     [AWS]
-     AWS_ACCESS_KEY_ID = "<YOUR_ACCESS_KEY_ID>"
-     AWS_SECRET_ACCESS_KEY = "<YOUR_SECRET_ACCESS_KEY>"
+     - [AWS]
+     1. AWS_ACCESS_KEY_ID = **"<YOUR_ACCESS_KEY_ID>"**
+     2. AWS_SECRET_ACCESS_KEY = **"<YOUR_SECRET_ACCESS_KEY>"**
   4. Adjust uchumi.py if your bucket name or region differs.
 
 # Run the Streamlit App
@@ -214,8 +214,8 @@ One can easily retrain or update similarity thresholds (e.g., change THRESHOLD i
 # 🔐 License & Attribution
 Copyright © 2025 Treva Ogwang. All Rights Reserved.
 
-No portion of this work may be reproduced, distributed, or modified without prior written permission from the author. 🛡️
+No portion of this work may be reproduced, distributed, or modified without prior written permission from the author. 
 
-Thank you for exploring the UCHUMI STORE Recommender System! Feel free to dive into each component, tweak thresholds, or extend the UI with more advanced filtering (e.g., by price, brand, or user ratings). 
+🛡️ Thank you for exploring the UCHUMI STORE Recommender System! Feel free to dive into each component, tweak thresholds, or extend the UI with more advanced filtering (e.g., by price, brand, or user ratings). 
 
 If you have questions or feature requests, please open an issue or pull request. ✨
