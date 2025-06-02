@@ -39,8 +39,11 @@ Jupyter notebook that:
 Loads the precomputed artifacts from disk:
 
 sim_df       = joblib.load("item_similarity.pkl")
+
 df_filtered  = joblib.load("df_filtered.pkl")
+
 item_to_cat  = joblib.load("item_to_category.pkl")
+
 cat_to_items = joblib.load("category_to_items.pkl")
 
 
