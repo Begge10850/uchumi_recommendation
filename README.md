@@ -184,33 +184,28 @@ Prepare a virtual environment (recommended):
 8. AWS S3 (cloud storage for model artifacts) 📥
 
 # 🏆 Achievements
-1. End-to-End Data-Driven Recommendation Pipeline
+1️⃣ End-to-End Data-Driven Recommendation Pipeline
+- Raw retail event data → cleaned DataFrame → item-item similarity matrix → neighbor dictionaries → deployed web app. 🎯
 
-Raw retail event data → cleaned DataFrame → item-item similarity matrix → neighbor dictionaries → deployed web app. 🎯
+2️⃣ Modular Artifact Generation
+- Automated scripts (make_artifacts.py + bundle_models.py) allow reproducible artifact creation and bundling, decoupling computation from deployment. 🔄
 
-2. Modular Artifact Generation
+3️⃣ Cloud Integration & Caching
+- Artifacts stored in AWS S3 and fetched on demand by Streamlit. ☁️
+- Caching (@st.cache_resource and @st.cache_data) ensures responsive UI and minimal repeated downloads. ⚡
 
-Automated scripts (make_artifacts.py + bundle_models.py) allow reproducible artifact creation and bundling, decoupling computation from deployment. 🔄
-
-3. Cloud Integration & Caching
-
-Artifacts stored in AWS S3 and fetched on demand by Streamlit. ☁️
-
-Caching (@st.cache_resource and @st.cache_data) ensures responsive UI and minimal repeated downloads. ⚡
-
-4. User-Friendly UI
-
-Intuitive dropdown to select items. 🖱️
+4️⃣ User-Friendly UI
+- Intuitive dropdown to select items. 🖱️
 
 Two recommendation strategies:
 
-Same-category “fallback” (popular items if no strong similarity exists). 🔄
+1. Same-category “fallback” (popular items if no strong similarity exists). 🔄
 
-“Bought together” (co-purchase neighbors). 🛒
+2. “Bought together” (co-purchase neighbors). 🛒
 
-Session-based basket that persists selections as you navigate. 🛍️
+- Session-based basket that persists selections as you navigate. 🛍️
 
-5. Reproducibility & Extensibility
+5️⃣ Reproducibility & Extensibility
 
 Clear project structure separates data cleaning, artifact creation, bundling, and deployment. 🔧
 
