@@ -1,4 +1,3 @@
-# Uchumi Store
 # 📦 UCHUMI STORE Recommender System
 
 ## 📝 Overview
