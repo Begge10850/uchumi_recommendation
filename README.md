@@ -10,6 +10,7 @@ This project implements an end-to-end retail recommender system for the “UCHUM
 
 To view the code for the application, you can click [retail_cleaning.ipynb](https://github.com/Begge10850/uchumi_recommendation/blob/main/retail_cleaning.ipynb), and open it via your code editor. You cannot view the code here in Github as the size is too large to be opened.
 However you can also click [retail_cleaning.html](https://github.com/Begge10850/uchumi_recommendation/blob/main/retail_cleaning.html), and download the html version of the code and view it. No need to use to any code editor.
+
 ---
 
 ## 📸 Screenshots
